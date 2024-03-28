@@ -1,1 +1,5 @@
+.gitignore
 random-name-api-venv/
+logs/
+config/
+dags/__pycache__/kafka_stream.cpython-38.pyc
