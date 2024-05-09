@@ -270,8 +270,28 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  
+  spark:
+    image: apache/spark:3.4.2-python3
+    container_name: spark_master
+    ports:
+      - 8085:8080
+    working_dir: /opt/spark
+    command: /opt/spark/sbin/start-master.sh
+    environment:
+      SPARK_UI_PORT: 8080
+      SPARK_MODE: master
+      SPARK_RPC_AUTHENTICATION_ENABLED: no
+      SPARK_RPC_ENCRYPTION_ENABLED: no
+      SPARK_NO_DAEMONIZE: "true"
+    volumes:
+      - ./:/home
+      - spark-data:/opt/spark/data
+    networks:
+      - airflow-network
+
   cassandra:
-    image: cassandra:5.0
+    image: cassandra:4.0
     container_name: cassandra
     hostname: cassandra
     ports:
@@ -286,6 +306,7 @@ services:
       - cassandra-data:/var/lib/cassandra
     networks:
       - airflow-network
+
 volumes:
   postgres-db-volume:
     name: postgres-db-volume
@@ -293,6 +314,8 @@ volumes:
     name: redis-volume
   cassandra-data:
     name: cassandra-data
+  spark-data:
+    name: spark-data
   
 networks:
   airflow-network:
