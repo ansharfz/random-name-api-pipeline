@@ -1,19 +1,7 @@
-# from time import time
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-
-from datetime import datetime
-
 from kafka import KafkaProducer, KafkaConsumer
 
 import json
 import requests
-
-
-default_args = {
-    'owner': 'airflow',
-    'start_date': datetime(2024, 6, 4, 13, 00),
-}
 
 
 def create_kafka_producer():
@@ -25,7 +13,7 @@ def create_kafka_producer():
 
 
 def create_kafka_consumer(topic):
-    consumer = KafkaConsumer(topic, bootstrap_servers=['localhost:9092'],
+    consumer = KafkaConsumer(topic, bootstrap_servers=['kafka:29092'],
                              auto_offset_reset='earliest',
                              value_deserializer=lambda x: json
                              .loads(x.decode('utf-8')))
@@ -36,7 +24,7 @@ def get_data():
 
     res = requests.get('https://randomuser.me/api')
     res = res.json()
-    res = res['results'][0]
+    res = res['res'][0]
 
     return res
 
@@ -44,21 +32,17 @@ def get_data():
 def format_data(res):
 
     data = {}
-    location = res['location']
-    data['first_name'] = res['name']['first']
-    data['last_name'] = res['name']['last']
-    data['gender'] = res['gender']
-    data['address'] = f"{str(location['street']['number'])} " \
-                      f"{location['street']['name']}, " \
-                      f"{location['city']}, {location['state']}, " \
-                      f"{location['country']}"
-    data['post_code'] = location['postcode']
-    data['email'] = res['email']
-    data['username'] = res['login']['username']
-    data['dob'] = res['dob']['date']
-    data['registered_date'] = res['registered']['date']
-    data['phone'] = res['phone']
-    data['picture'] = res['picture']['medium']
+    data["full_name"] = f"{res['name']['title']}. {res['name']['first']} \
+                          {res['name']['last']}"
+    data["gender"] = res["gender"]
+    data["location"] = f"{res['location']['street']['number']}, \
+                         {res['location']['street']['name']}"
+    data["city"] = res['location']['city']
+    data["country"] = res['location']['country']
+    data["postcode"] = int(res['location']['postcode'])
+    data["latitude"] = float(res['location']['coordinates']['latitude'])
+    data["longitude"] = float(res['location']['coordinates']['longitude'])
+    data["email"] = res["email"]
 
     return data
 
@@ -71,16 +55,3 @@ def stream_data():
         data = format_data(res)
         producer.send(topic, value=data)
         producer.flush()
-
-
-with DAG('user_automation',
-         default_args=default_args,
-         schedule='@daily',
-         catchup=False) as dag:
-
-    streaming_task = PythonOperator(
-            task_id='stream_data_from_api',
-            python_callable=stream_data,
-            dag=dag)
-
-streaming_task
