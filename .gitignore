@@ -1,5 +1,8 @@
 .gitignore
 random-name-api-venv/
+dags/__pycache__
 logs/
+plugins/
 config/
-dags/__pycache__/kafka_stream.cpython-38.pyc
+spark/
+cassandra/

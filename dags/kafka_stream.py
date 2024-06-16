@@ -1,30 +1,21 @@
-from kafka import KafkaProducer, KafkaConsumer
+from kafka import KafkaProducer
 
 import json
 import requests
 
 
 def create_kafka_producer():
-
-    producer = KafkaProducer(bootstrap_servers=['kafka:29092'],
+    producer = KafkaProducer(bootstrap_servers=['kafka:9092'],
                              value_serializer=lambda x: json.dumps(x)
                              .encode('utf-8'))
     return producer
-
-
-def create_kafka_consumer(topic):
-    consumer = KafkaConsumer(topic, bootstrap_servers=['kafka:29092'],
-                             auto_offset_reset='earliest',
-                             value_deserializer=lambda x: json
-                             .loads(x.decode('utf-8')))
-    return consumer
 
 
 def get_data():
 
     res = requests.get('https://randomuser.me/api')
     res = res.json()
-    res = res['res'][0]
+    res = res['results'][0]
 
     return res
 
@@ -39,7 +30,7 @@ def format_data(res):
                          {res['location']['street']['name']}"
     data["city"] = res['location']['city']
     data["country"] = res['location']['country']
-    data["postcode"] = int(res['location']['postcode'])
+    data["postcode"] = res['location']['postcode']
     data["latitude"] = float(res['location']['coordinates']['latitude'])
     data["longitude"] = float(res['location']['coordinates']['longitude'])
     data["email"] = res["email"]
@@ -55,3 +46,6 @@ def stream_data():
         data = format_data(res)
         producer.send(topic, value=data)
         producer.flush()
+
+
+stream_data()

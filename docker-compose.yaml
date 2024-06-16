@@ -250,6 +250,8 @@ services:
       - airflow-network
     ports:
       - "2181:2181"
+    volumes:
+      - zookeeper-data:/data
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -268,18 +270,20 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092, PLAINTEXT_HOST://0.0.0.0:29092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
   
   spark:
     image: apache/spark:3.4.2-python3
-    container_name: spark_master
+    container_name: spark
     ports:
-      - 8085:8080
+      - 8085:8085
     working_dir: /opt/spark
-    command: /opt/spark/sbin/start-master.sh
+    command: >
+      /opt/spark/sbin/start-master.sh
     environment:
-      SPARK_UI_PORT: 8080
+      SPARK_UI_PORT: 8085
       SPARK_MODE: master
       SPARK_RPC_AUTHENTICATION_ENABLED: no
       SPARK_RPC_ENCRYPTION_ENABLED: no
@@ -316,7 +320,8 @@ volumes:
     name: cassandra-data
   spark-data:
     name: spark-data
-  
+  zookeeper-data:
+    name: zookeeper-data
 networks:
   airflow-network:
     name: airflow-network

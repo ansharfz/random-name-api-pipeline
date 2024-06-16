@@ -13,15 +13,13 @@ logger = logging.getLogger("spark_structured_streaming")
 def create_spark_session():
     try:
         spark = SparkSession \
-           .builder \
-           .appName('SparkStructuredStreaming') \
-           .config("spark.jars.packages",
-                   "com.datastax.spark:spark-cassandra-connector_2.12:3.4.0, \
-                    org.apache.spark:spark-sql-kafka-0-10_2.13:3.4.2") \
-           .config("spark.cassandra.connection.auth.username", "cassandra") \
-           .config("spark.cassandra.connection.auth.password", "cassandra") \
-           .config("spark.cassandra.connection.port", 9042) \
-           .getOrCreate()
+            .builder \
+            .appName('SparkStructuredStreaming') \
+            .config('spark.cassandra.connection.host', 'cassandra') \
+            .config("spark.cassandra.connection.port", 9042) \
+            .config("spark.cassandra.auth.username", "cassandra") \
+            .config("spark.cassandra.auth.password", "cassandra") \
+            .getOrCreate()
         spark.sparkContext.setLogLevel("ERROR")
         logging.info('Spark session created successfully')
     except Exception:
@@ -36,7 +34,7 @@ def create_initial_dataframe(spark_session):
         df = spark_session \
              .readStream \
              .format("kafka") \
-             .option("kafka.bootstrap.servers", "kafka:29092") \
+             .option("kafka.bootstrap.servers", "kafka:9092") \
              .option("subscribe", "user_data") \
              .option("delimeter", ",") \
              .option("startingOffsets", "earliest") \
@@ -50,9 +48,6 @@ def create_initial_dataframe(spark_session):
 
 
 def create_final_dataframe(df, spark_session):
-    """
-    Modifies the initial dataframe, and creates the final dataframe.
-    """
     schema = StructType([
                 StructField("full_name", StringType(), False),
                 StructField("gender", StringType(), False),
@@ -68,15 +63,20 @@ def create_final_dataframe(df, spark_session):
     df = df.selectExpr("CAST(value AS STRING)") \
            .select(from_json(col("value"), schema).alias("data")) \
            .select("data.*")
-    print(df)
+    return df
 
 
 def start_streaming(df):
     logging.info("Streaming started")
     my_query = (df.writeStream
-                  .format("com.apache.spark.sql.cassandra")
+                  .format("org.apache.spark.sql.cassandra")
                   .outputMode("append")
-                  .options(table="random_names", keyspace="spark_streaming"))
+                  .option("checkpointLocation", "/opt/spark/checkpoint")
+                  .options(table="random_names", keyspace="spark_streaming")
+                  .option("kafka.request.timeout.ms", "30000")
+                  .option("kafka.retry.backoff.ms", "500")
+                  .option("kafka.session.timeout.ms", "60000")
+                  .start())
 
     return my_query.awaitTermination()
 
