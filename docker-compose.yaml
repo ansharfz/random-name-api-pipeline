@@ -280,8 +280,7 @@ services:
     ports:
       - 8085:8085
     working_dir: /opt/spark
-    command: >
-      /opt/spark/sbin/start-master.sh
+    command: /opt/spark/sbin/start-master.sh
     environment:
       SPARK_UI_PORT: 8085
       SPARK_MODE: master
@@ -291,6 +290,7 @@ services:
     volumes:
       - ./:/home
       - spark-data:/opt/spark/data
+      - ${AIRFLOW_PROJ_DIR:-.}/spark-jobs:/opt/spark/spark-jobs
     networks:
       - airflow-network
 
