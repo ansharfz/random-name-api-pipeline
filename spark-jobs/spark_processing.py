@@ -16,7 +16,7 @@ def create_spark_session():
 
     Returns
     -------
-    spark : SparkSession
+    spark : pyspark.sql.SparkSession
         A new Spark session instance.
 
     Raises
@@ -152,7 +152,7 @@ def start_streaming(df):
 
 def write_streaming_data():
     """
-    Write streaming data to a sink.
+    Combines all other functions to create a Spark Streaming job.
 
     This function creates a Spark session,
     generates an initial DataFrame, transforms it into a final DataFrame,
