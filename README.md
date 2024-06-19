@@ -30,7 +30,8 @@ The pipeline consists of the following components:
 3. Build and start the Docker containers:
     
     ```
-    docker compose up --build
+    docker build .
+    docker compose up
     ```
 This will start all the required services (Airflow, Kafka, Spark, Cassandra, etc.).
 
@@ -40,6 +41,7 @@ This will start all the required services (Airflow, Kafka, Spark, Cassandra, etc
 The pipeline is defined in the dags/dags.py file. It consists of two tasks:
 
 stream_data_from_api: Fetches random user data from the RandomUser.me API and produces messages to a Kafka topic.
+
 process_data: Consumes messages from the Kafka topic, processes the data using Apache Spark, and stores the processed data in Apache Cassandra.
 
 The Spark processing logic is defined in the spark-jobs/spark_processing.py file.
